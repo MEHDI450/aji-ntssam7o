@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paroles Dynamiques - Bombom</title>
+    <style>
+        /* Arrière-plan */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: radial-gradient(circle at center, #3c0a5e 0%, #1a0033 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Arial Black', Impact, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* 1. L'EFFET NÉON QUI CLIGNOTE */
+        @keyframes neon-flicker {
+            0%, 18%, 22%, 25%, 53%, 57%, 100% {
+                text-shadow:
+                    0 0 5px #ffffff,
+                    0 0 10px #ffffff,
+                    0 0 20px #00ffff,
+                    0 0 40px #00ffff,
+                    0 0 80px #00ffff,
+                    0 0 100px #00bfff;
+                opacity: 1;
+            }
+            20%, 24%, 55% {
+                text-shadow: none;
+                opacity: 0.4; /* Le néon s'éteint brièvement */
+            }
+        }
+
+        .neon-title {
+            font-size: 3.5rem;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            margin-bottom: 60px;
+            /* On applique l'animation de clignotement ici */
+            animation: neon-flicker 3s infinite alternate; 
+        }
+
+        /* 2. LE CONTENEUR DES PAROLES */
+        #dynamic-lyrics {
+            position: relative;
+            width: 100%;
+            height: 100px; /* Hauteur fixe pour que le texte puisse bouger dedans */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 3. L'ANIMATION DES PAROLES QUI MONTENT */
+        .lyric-line {
+            position: absolute;
+            font-size: 2.5rem;
+            text-align: center;
+            color: #00ffff;
+            text-shadow: 0 0 15px #00ffff;
+            
+            /* État de départ (légèrement en bas, invisible) */
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out; /* Durée de l'animation */
+        }
+
+        /* État actif (au centre, visible) */
+        .lyric-line.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* État de sortie (monte et disparaît) */
+        .lyric-line.exit {
+            opacity: 0;
+            transform: translateY(-40px); /* C'est ici que le texte "monte" */
+        }
+
+        /* Signature et UI */
+        #signature {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            font-size: 1rem;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+            font-weight: 100;
+        }
+
+        #start-btn {
+            position: absolute;
+            top: 20px;
+            padding: 10px 20px;
+            font-size: 1rem;
+            background-color: #00ffff;
+            color: #1a0033;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        
+        #timer-display {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            color: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="timer-display">0.0s</div>
+    <button id="start-btn">▶️ Démarrer l'animation</button>
+
+    <div class="neon-title">🎵 AJI NTSSAM7O 🎵</div>
+    
+    <div id="dynamic-lyrics"></div>
+    
+    <div id="signature">( حميدة المبرمج 💔😂 )</div>
+
+    <audio id="musique-bombom" src="Bombom (mp3cut.net).mp3" preload="auto"></audio>
+
+    <script>
+        const parolesData = [
+            { time: 0.0, text: "BOM 💥 BOM 💥 BOM 💥 BOM 💥" },
+            { time: 1.8, text: "Menek majani noum" },
+            { time: 3.6, text: "Aji 3ndi ntssamho 🥺" },
+            { time: 5.4, text: "OYA K7let l3youn 😍" },
+            { time: 7.2, text: "BOM 💥 BOM 💥 BOM 💥 BOM 💥" },
+            { time: 9.0, text: "Nti tfaji lhmoooom 😍" },
+            { time: 10.8, text: "3lach bghina ntkhasmo 🥺" },
+            { time: 12.6, text: "Glbi mnk m7roum 💔" },
+        ];
+
+        const lyricsContainer = document.getElementById('dynamic-lyrics');
+        const timerDisplay = document.getElementById('timer-display');
+        const startBtn = document.getElementById('start-btn');
+        
+        // 1. Récupération de la piste audio
+        const musique = document.getElementById('musique-bombom');
+        
+        let animationInterval;
+        let currentIndex = -1;
+
+        function updateLyrics() {
+            // 2. Synchronisation parfaite sur le temps de la musique
+            const elapsedTime = musique.currentTime; 
+            timerDisplay.innerText = elapsedTime.toFixed(1) + "s";
+
+            let nextIndex = -1;
+            for (let i = 0; i < parolesData.length; i++) {
+                if (elapsedTime >= parolesData[i].time) {
+                    nextIndex = i;
+                } else {
+                    break;
+                }
+            }
+
+            if (nextIndex !== currentIndex && nextIndex !== -1) {
+                // Faire disparaître la phrase actuelle en la faisant monter
+                const currentElement = document.querySelector('.lyric-line.active');
+                if (currentElement) {
+                    currentElement.classList.remove('active');
+                    currentElement.classList.add('exit'); // Déclenche l'animation de montée
+                    
+                    // Détruit l'élément HTML après 500ms (le temps de l'animation CSS)
+                    setTimeout(() => currentElement.remove(), 500); 
+                }
+
+                currentIndex = nextIndex;
+                
+                // Créer et afficher la nouvelle phrase
+                if (parolesData[currentIndex].text !== "") {
+                    const newElement = document.createElement('div');
+                    newElement.className = 'lyric-line';
+                    newElement.innerHTML = parolesData[currentIndex].text;
+                    
+                    lyricsContainer.appendChild(newElement);
+
+                    // Petite astuce technique : on force le navigateur à dessiner l'élément 
+                    // invisible avant d'ajouter la classe 'active' pour que l'animation marche.
+                    void newElement.offsetWidth; 
+                    newElement.classList.add('active');
+                }
+            }
+        }
+
+        startBtn.addEventListener('click', () => {
+            // 3. Lancement de la musique et de l'animation en même temps
+            musique.currentTime = 0;
+            musique.play();
+
+            startBtn.style.display = 'none';
+            currentIndex = -1;
+            lyricsContainer.innerHTML = ''; // Nettoyer au cas où on recommence
+            
+            if (animationInterval) clearInterval(animationInterval);
+            animationInterval = setInterval(updateLyrics, 50);
+        });
+
+        // 4. Bonus : Réafficher le bouton quand la musique est terminée
+        musique.addEventListener('ended', () => {
+            clearInterval(animationInterval);
+            startBtn.style.display = 'block';
+            startBtn.innerText = "▶️ Recommencer";
+            timerDisplay.innerText = "0.0s";
+        });
+    </script>
+
+</body>
+</html>
