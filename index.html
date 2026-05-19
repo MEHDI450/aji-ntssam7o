@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Paroles Dynamiques - Bombom</title>
     <style>
         /* Arrière-plan */
@@ -18,6 +18,9 @@
             font-family: 'Arial Black', Impact, sans-serif;
             overflow: hidden;
             color: white;
+            /* Empêche la sélection de texte accidentelle sur mobile */
+            user-select: none; 
+            -webkit-user-select: none;
         }
 
         /* 1. L'EFFET NÉON QUI CLIGNOTE */
@@ -34,7 +37,7 @@
             }
             20%, 24%, 55% {
                 text-shadow: none;
-                opacity: 0.4; /* Le néon s'éteint brièvement */
+                opacity: 0.4;
             }
         }
 
@@ -43,15 +46,16 @@
             text-transform: uppercase;
             letter-spacing: 5px;
             margin-bottom: 60px;
-            /* On applique l'animation de clignotement ici */
+            text-align: center;
             animation: neon-flicker 3s infinite alternate; 
+            padding: 0 15px; /* Marge intérieure pour éviter de coller aux bords */
         }
 
         /* 2. LE CONTENEUR DES PAROLES */
         #dynamic-lyrics {
             position: relative;
             width: 100%;
-            height: 100px; /* Hauteur fixe pour que le texte puisse bouger dedans */
+            height: 100px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -64,30 +68,29 @@
             text-align: center;
             color: #00ffff;
             text-shadow: 0 0 15px #00ffff;
+            width: 90%; /* Garde le texte centré sans déborder */
             
-            /* État de départ (légèrement en bas, invisible) */
+            /* État de départ */
             opacity: 0;
             transform: translateY(20px);
-            transition: all 0.5s ease-out; /* Durée de l'animation */
+            transition: all 0.5s ease-out;
         }
 
-        /* État actif (au centre, visible) */
         .lyric-line.active {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* État de sortie (monte et disparaît) */
         .lyric-line.exit {
             opacity: 0;
-            transform: translateY(-40px); /* C'est ici que le texte "monte" */
+            transform: translateY(-40px);
         }
 
         /* Signature et UI */
         #signature {
             position: fixed;
-            bottom: 10px;
-            right: 10px;
+            bottom: 15px;
+            right: 15px;
             font-size: 1rem;
             text-shadow: 0 0 5px rgba(255,255,255,0.5);
             font-weight: 100;
@@ -96,15 +99,16 @@
         #start-btn {
             position: absolute;
             top: 20px;
-            padding: 10px 20px;
+            padding: 12px 24px;
             font-size: 1rem;
             background-color: #00ffff;
             color: #1a0033;
             border: none;
-            border-radius: 5px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
             z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4); /* Joli effet de bouton */
         }
         
         #timer-display {
@@ -114,6 +118,46 @@
             font-family: monospace;
             font-size: 1.2rem;
             color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* =======================================================
+           ADAPTATION POUR TÉLÉPHONES (MEDIA QUERIES)
+           ======================================================= */
+        @media (max-width: 600px) {
+            .neon-title {
+                font-size: 1.8rem; /* Titre plus petit */
+                letter-spacing: 2px;
+                margin-bottom: 40px;
+            }
+
+            .lyric-line {
+                font-size: 1.5rem; /* Paroles plus petites pour rentrer sur l'écran */
+            }
+
+            #dynamic-lyrics {
+                height: 80px;
+            }
+
+            #start-btn {
+                top: 50%; /* Centre le bouton sur mobile avant le démarrage */
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 1.1rem;
+                width: 80%;
+                text-align: center;
+            }
+
+            #timer-display {
+                top: 15px;
+                left: 15px;
+                font-size: 1rem;
+            }
+
+            #signature {
+                bottom: 10px;
+                right: 10px;
+                font-size: 0.8rem; /* Signature plus discrète */
+            }
         }
     </style>
 </head>
@@ -146,14 +190,12 @@
         const timerDisplay = document.getElementById('timer-display');
         const startBtn = document.getElementById('start-btn');
         
-        // 1. Récupération de la piste audio
         const musique = document.getElementById('musique-bombom');
         
         let animationInterval;
         let currentIndex = -1;
 
         function updateLyrics() {
-            // 2. Synchronisation parfaite sur le temps de la musique
             const elapsedTime = musique.currentTime; 
             timerDisplay.innerText = elapsedTime.toFixed(1) + "s";
 
@@ -167,19 +209,15 @@
             }
 
             if (nextIndex !== currentIndex && nextIndex !== -1) {
-                // Faire disparaître la phrase actuelle en la faisant monter
                 const currentElement = document.querySelector('.lyric-line.active');
                 if (currentElement) {
                     currentElement.classList.remove('active');
-                    currentElement.classList.add('exit'); // Déclenche l'animation de montée
-                    
-                    // Détruit l'élément HTML après 500ms (le temps de l'animation CSS)
+                    currentElement.classList.add('exit'); 
                     setTimeout(() => currentElement.remove(), 500); 
                 }
 
                 currentIndex = nextIndex;
                 
-                // Créer et afficher la nouvelle phrase
                 if (parolesData[currentIndex].text !== "") {
                     const newElement = document.createElement('div');
                     newElement.className = 'lyric-line';
@@ -187,8 +225,6 @@
                     
                     lyricsContainer.appendChild(newElement);
 
-                    // Petite astuce technique : on force le navigateur à dessiner l'élément 
-                    // invisible avant d'ajouter la classe 'active' pour que l'animation marche.
                     void newElement.offsetWidth; 
                     newElement.classList.add('active');
                 }
@@ -196,21 +232,21 @@
         }
 
         startBtn.addEventListener('click', () => {
-            // 3. Lancement de la musique et de l'animation en même temps
             musique.currentTime = 0;
             musique.play();
 
+            // Rétablit le style du bouton pour qu'il ne reste pas au centre s'il réapparaît
             startBtn.style.display = 'none';
             currentIndex = -1;
-            lyricsContainer.innerHTML = ''; // Nettoyer au cas où on recommence
+            lyricsContainer.innerHTML = ''; 
             
             if (animationInterval) clearInterval(animationInterval);
             animationInterval = setInterval(updateLyrics, 50);
         });
 
-        // 4. Bonus : Réafficher le bouton quand la musique est terminée
         musique.addEventListener('ended', () => {
             clearInterval(animationInterval);
+            // Remet le bouton au centre sur mobile
             startBtn.style.display = 'block';
             startBtn.innerText = "▶️ Recommencer";
             timerDisplay.innerText = "0.0s";
